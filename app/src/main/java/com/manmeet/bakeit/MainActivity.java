@@ -8,6 +8,7 @@ import com.manmeet.bakeit.fragments.RecipeFragment;
 public class MainActivity extends AppCompatActivity {
 
     private static boolean mTabletView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -17,10 +18,6 @@ public class MainActivity extends AppCompatActivity {
         } else {
             mTabletView = true;
         }
-        RecipeFragment recipeFragment = new RecipeFragment();
-        getSupportFragmentManager().beginTransaction()
-                .add(R.id.recipe_list_container, recipeFragment)
-                .commit();
     }
     public static boolean checkTabletView() {
         return mTabletView;

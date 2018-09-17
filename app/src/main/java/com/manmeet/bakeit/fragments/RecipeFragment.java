@@ -1,5 +1,8 @@
 package com.manmeet.bakeit.fragments;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -9,10 +12,14 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.GridView;
 
 import com.manmeet.bakeit.R;
 import com.manmeet.bakeit.adapters.RecipeAdapter;
+import com.manmeet.bakeit.pojos.Ingredient;
 import com.manmeet.bakeit.pojos.Recipe;
+import com.manmeet.bakeit.pojos.Step;
 import com.manmeet.bakeit.retrofit.ApiBuilder;
 import com.manmeet.bakeit.retrofit.ApiInterface;
 
@@ -29,9 +36,9 @@ import static android.content.ContentValues.TAG;
 public class RecipeFragment extends Fragment {
     public RecyclerView recipeRecyclerView;
     String resultJson;
-    public List<Recipe> recipeList;
+    private List<Recipe> recipeList;
     private boolean mTwoPane;
-    public RecipeAdapter recipeAdapter;
+    private RecipeAdapter recipeAdapter;
     private ApiInterface apiInterface;
 
     public RecipeFragment() {
@@ -48,11 +55,20 @@ public class RecipeFragment extends Fragment {
         recipeRecyclerView.setItemAnimator(new DefaultItemAnimator());
         recipeList = new ArrayList<>();
         recipeAdapter = new RecipeAdapter(getContext(), recipeList);
-        recipeAdapter.getItemCount();
         recipeRecyclerView.setAdapter(recipeAdapter);
-
-        getRecipeList();
+        if ( isNetworkConnected()){
+            getRecipeList();
+        }
         return view;
+    }
+
+    private boolean isNetworkConnected() {
+        ConnectivityManager connectivityManager =
+                (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+
+        return networkInfo != null && networkInfo.isConnectedOrConnecting();
+
     }
 
     public void getRecipeList() {
@@ -62,7 +78,6 @@ public class RecipeFragment extends Fragment {
             public void onResponse(Call<ArrayList<Recipe>> call, Response<ArrayList<Recipe>> response) {
                 if (response.body() != null) {
                     recipeList.addAll(response.body());
-                    Log.i("RecipeList - ",recipeList.toString());
                     recipeAdapter.notifyDataSetChanged();
                 }
             }
@@ -74,42 +89,4 @@ public class RecipeFragment extends Fragment {
             }
         });
     }
-    /*// TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
-
-    *//**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     *//*
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
-    }*/
 }
