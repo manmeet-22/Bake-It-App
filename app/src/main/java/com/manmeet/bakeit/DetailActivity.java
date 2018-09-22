@@ -18,12 +18,17 @@ import java.util.List;
 public class DetailActivity extends AppCompatActivity {
     private String steps;
     private String ingredients;
+    private String recipe;
     private boolean tabletView;
+    private boolean rotationDetails;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
+        if (savedInstanceState != null) {
+            rotationDetails = savedInstanceState.getBoolean(ConstantUtility.KEY_ROTATION_DETAIL_ACTIVITY);
+        }
         Intent intent = getIntent();
         if (findViewById(R.id.video_container) != null) {
             tabletView = true;
@@ -34,28 +39,25 @@ public class DetailActivity extends AppCompatActivity {
         if (savedInstanceState == null) {
             ingredients = intent.getStringExtra(ConstantUtility.INTENT_INGREDIENT_KEY);
             steps = intent.getStringExtra(ConstantUtility.INTENT_STEP_KEY);
+            recipe = intent.getStringExtra(ConstantUtility.INTENT_RECIPE_NAME_KEY);
             FragmentManager fragmentManager = getSupportFragmentManager();
             DetailFragment detailFragment = new DetailFragment();
             Bundle bundle = new Bundle();
+            bundle.putString(ConstantUtility.INTENT_RECIPE_NAME_KEY, recipe);
             bundle.putString(ConstantUtility.INTENT_INGREDIENT_KEY, ingredients);
             bundle.putString(ConstantUtility.INTENT_STEP_KEY, steps);
-            detailFragment.setArguments(bundle);
-            fragmentManager.beginTransaction()
-                    .add(R.id.detail_container, detailFragment)
-                    .commit();
-        } else{
-            ingredients = intent.getStringExtra(ConstantUtility.INTENT_INGREDIENT_KEY);
-            steps = intent.getStringExtra(ConstantUtility.INTENT_STEP_KEY);
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            DetailFragment detailFragment = new DetailFragment();
-            Bundle bundle = new Bundle();
-            bundle.putString(ConstantUtility.INTENT_INGREDIENT_KEY, ingredients);
-            bundle.putString(ConstantUtility.INTENT_STEP_KEY, steps);
+            bundle.putBoolean(ConstantUtility.INTENT_TAB_VIEW_KEY, tabletView);
             detailFragment.setArguments(bundle);
             fragmentManager.beginTransaction()
                     .replace(R.id.detail_container, detailFragment)
                     .commit();
-
+            rotationDetails = true;
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.getBoolean(ConstantUtility.KEY_ROTATION_DETAIL_ACTIVITY, rotationDetails);
     }
 }

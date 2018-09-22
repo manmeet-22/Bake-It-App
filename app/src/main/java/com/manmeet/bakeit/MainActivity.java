@@ -1,13 +1,19 @@
 package com.manmeet.bakeit;
 
+import android.support.annotation.NonNull;
+import android.support.annotation.VisibleForTesting;
+import android.support.test.espresso.IdlingResource;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
 import com.manmeet.bakeit.fragments.RecipeFragment;
+import com.manmeet.bakeit.utils.SimpleIdlingResource;
 
 public class MainActivity extends AppCompatActivity {
 
     private static boolean mTabletView;
+
+    private SimpleIdlingResource simpleIdlingResource;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,8 +24,18 @@ public class MainActivity extends AppCompatActivity {
         } else {
             mTabletView = true;
         }
+        getIdlingResource();
     }
-    public static boolean checkTabletView() {
+    public static boolean isTabletView() {
         return mTabletView;
+    }
+
+    @VisibleForTesting
+    @NonNull
+    public IdlingResource getIdlingResource() {
+        if (simpleIdlingResource == null) {
+            simpleIdlingResource = new SimpleIdlingResource();
+        }
+        return simpleIdlingResource;
     }
 }

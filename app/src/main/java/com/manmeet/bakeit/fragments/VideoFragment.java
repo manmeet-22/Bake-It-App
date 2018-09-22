@@ -44,6 +44,7 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
     public static final String TAG = VideoFragment.class.getSimpleName();
     long positionPlayer;
     boolean playWhenReady;
+    private TextView videoName;
     private SimpleExoPlayerView simpleExoPlayerView;
     private TextView videoDescription;
     private ImageView videoPlaceholder;
@@ -81,6 +82,7 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
         simpleExoPlayerView = view.findViewById(R.id.video_exo_player);
         videoDescription = view.findViewById(R.id.video_description);
         videoPlaceholder = view.findViewById(R.id.video_placeholder);
+        videoName = view.findViewById(R.id.video_name);
         if (savedInstanceState != null) {
             int placeHolderVisibility = savedInstanceState.getInt(ConstantUtility.KEY_VISIBILITY_VIDEO_PLACEHOLDER);
             videoPlaceholder.setVisibility(placeHolderVisibility);
@@ -90,7 +92,11 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
             playWhenReady = savedInstanceState.getBoolean(ConstantUtility.BOOLEAN_PLAY_WHEN_READY);
         }
         //Log.d(TAG, "URL : " + url);
+        videoName.setText(shortDescription);
         if (videoUrl != null) {
+            if (videoUrl.equals("") && !thumbnailUrl.equals("")){
+                videoUrl = thumbnailUrl;
+            }
             if (videoUrl.equals("")) {
                 Log.d(TAG, "EMPTY URL");
                 simpleExoPlayerView.setVisibility(View.GONE);

@@ -35,16 +35,13 @@ public class StepAdapter extends RecyclerView.Adapter<StepAdapter.StepViewHolder
 
     @Override
     public void onBindViewHolder(StepViewHolder holder, int position) {
-        Step step = stepList.get(position);
+        final Step step = stepList.get(position);
         shortDescription = step.getShortDescription();
-        description = step.getDescription();
-        videoUrl = step.getVideoURL();
-        thumbnailUrl = step.getThumbnailURL();
         holder.stepName.setText(shortDescription);
         holder.stepName.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                mClickCallback.onStepSelected(context,shortDescription,description,videoUrl,thumbnailUrl);
+                mClickCallback.onStepSelected(step);
             }
         });
     }
