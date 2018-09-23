@@ -7,12 +7,16 @@ import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.manmeet.bakeit.adapters.IngredientAdapter;
 import com.manmeet.bakeit.fragments.DetailFragment;
+import com.manmeet.bakeit.fragments.VideoFragment;
 import com.manmeet.bakeit.pojos.Ingredient;
 import com.manmeet.bakeit.pojos.Step;
 import com.manmeet.bakeit.utils.ConstantUtility;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DetailActivity extends AppCompatActivity {
@@ -29,13 +33,26 @@ public class DetailActivity extends AppCompatActivity {
         if (savedInstanceState != null) {
             rotationDetails = savedInstanceState.getBoolean(ConstantUtility.KEY_ROTATION_DETAIL_ACTIVITY);
         }
-        Intent intent = getIntent();
         if (findViewById(R.id.video_container) != null) {
             tabletView = true;
-            getSupportFragmentManager().beginTransaction()
-                    .add(R.id.video_container, new DetailFragment()).commit();
-
+         /*   Bundle bundle = new Bundle();
+            Gson gson = new Gson();
+            ArrayList<Step> stepList = new ArrayList<Step>();
+            stepList=gson.fromJson(steps,
+                    new TypeToken<List<Step>>() {
+                    }.getType());
+            Step step = stepList.get(0);
+            bundle.putString(ConstantUtility.INTENT_SHORT_DESCRIPTION_KEY, step.getShortDescription());
+            bundle.putString(ConstantUtility.INTENT_DESCRIPTION_KEY, step.getDescription());
+            bundle.putString(ConstantUtility.INTENT_VIDEO_URL_KEY, step.getVideoURL());
+            bundle.putString(ConstantUtility.INTENT_THUMBNAIL_KEY, step.getThumbnailURL());
+            VideoFragment videoFragment = new VideoFragment();
+            videoFragment.setArguments(bundle);
+         */   getSupportFragmentManager().beginTransaction()
+                    .add(R.id.video_container, new VideoFragment()).commit();
         }
+
+        Intent intent = getIntent();
         if (savedInstanceState == null) {
             ingredients = intent.getStringExtra(ConstantUtility.INTENT_INGREDIENT_KEY);
             steps = intent.getStringExtra(ConstantUtility.INTENT_STEP_KEY);
@@ -53,6 +70,7 @@ public class DetailActivity extends AppCompatActivity {
                     .commit();
             rotationDetails = true;
         }
+
     }
 
     @Override

@@ -17,6 +17,9 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,6 +33,7 @@ import com.manmeet.bakeit.pojos.Ingredient;
 import com.manmeet.bakeit.pojos.Recipe;
 import com.manmeet.bakeit.pojos.Step;
 import com.manmeet.bakeit.utils.ConstantUtility;
+import com.manmeet.bakeit.utils.NetworkUtility;
 import com.manmeet.bakeit.utils.OnStepClickListener;
 import com.manmeet.bakeit.widget.RecipeWidget;
 
@@ -49,7 +53,9 @@ public class DetailFragment extends Fragment implements OnStepClickListener {
     private boolean mTabletView;
     private Parcelable mListState;
     private LinearLayoutManager linearLayoutManager;
-
+    private ProgressBar mProgressBar;
+    private TextView mErrorMessage;
+    private ScrollView detailScrollView;
 
     public DetailFragment() {
         // Required empty public constructor
@@ -61,10 +67,14 @@ public class DetailFragment extends Fragment implements OnStepClickListener {
         View view = inflater.inflate(R.layout.fragment_detail, container, false);
         recipeName = view.findViewById(R.id.ingredient_recipe_name);
         floatingActionButton = view.findViewById(R.id.fab);
+        mErrorMessage = view.findViewById(R.id.detail_no_network);
+        detailScrollView = view.findViewById(R.id.detail_scrollview);
+        mProgressBar = view.findViewById(R.id.detail_progressbar);
         ingredientRecyclerView = view.findViewById(R.id.ingredient_recycler_view);
         ingredientRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         ingredientRecyclerView.setItemAnimator(new DefaultItemAnimator());
         ingredientList = new ArrayList<Ingredient>();
+        mProgressBar.setVisibility(View.VISIBLE);
 
         stepRecyclerView = view.findViewById(R.id.step_recycler_view);
         linearLayoutManager = new LinearLayoutManager(getActivity());
@@ -76,47 +86,57 @@ public class DetailFragment extends Fragment implements OnStepClickListener {
         if (savedInstanceState != null) {
             mListState = savedInstanceState.getParcelable(ConstantUtility.DETAIL_RECYCLER_VIEW_STATE);
         }
-        Bundle bundle = getArguments();
-        String ingredients = bundle.getString(ConstantUtility.INTENT_INGREDIENT_KEY);
-        String steps = bundle.getString(ConstantUtility.INTENT_STEP_KEY);
-        String recipe = bundle.getString(ConstantUtility.INTENT_RECIPE_NAME_KEY);
-        mTabletView = bundle.getBoolean(ConstantUtility.INTENT_TAB_VIEW_KEY);
 
-        floatingActionButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                SharedPreferences sharedPreferences = getActivity()
-                        .getSharedPreferences(ConstantUtility.SHARED_PREFERENCE, Context.MODE_PRIVATE);
-                Recipe recipe = gson.fromJson(sharedPreferences.getString(ConstantUtility.WIDGET_RESULT, null), Recipe.class);
-                AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(getActivity());
-                Bundle bundle = new Bundle();
-                int appWidgetId = bundle.getInt(
-                        AppWidgetManager.EXTRA_APPWIDGET_ID,
-                        AppWidgetManager.INVALID_APPWIDGET_ID);
-                RecipeWidget.updateAppWidget(getActivity(), appWidgetManager, appWidgetId, recipe.getName(),
-                        recipe.getIngredients());
-                Toast.makeText(getActivity(), "Added " + recipe.getName() + " to Widget.", Toast.LENGTH_SHORT).show();
+        if (NetworkUtility.isNetworkConnected(view.getContext())) {
+            mErrorMessage.setVisibility(View.GONE);
+            floatingActionButton.setVisibility(View.VISIBLE);
+            detailScrollView.setVisibility(View.VISIBLE);
+            Bundle bundle = getArguments();
+            String ingredients = bundle.getString(ConstantUtility.INTENT_INGREDIENT_KEY);
+            String steps = bundle.getString(ConstantUtility.INTENT_STEP_KEY);
+            String recipe = bundle.getString(ConstantUtility.INTENT_RECIPE_NAME_KEY);
+            mTabletView = bundle.getBoolean(ConstantUtility.INTENT_TAB_VIEW_KEY);
 
-            }
-        });
+            floatingActionButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    SharedPreferences sharedPreferences = getActivity()
+                            .getSharedPreferences(ConstantUtility.SHARED_PREFERENCE, Context.MODE_PRIVATE);
+                    Recipe recipe = gson.fromJson(sharedPreferences.getString(ConstantUtility.WIDGET_RESULT, null), Recipe.class);
+                    AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(getActivity());
+                    Bundle bundle = new Bundle();
+                    int appWidgetId = bundle.getInt(
+                            AppWidgetManager.EXTRA_APPWIDGET_ID,
+                            AppWidgetManager.INVALID_APPWIDGET_ID);
+                    RecipeWidget.updateAppWidget(getActivity(), appWidgetManager, appWidgetId, recipe.getName(),
+                            recipe.getIngredients());
+                    Toast.makeText(getActivity(), "Added " + recipe.getName() + " to Widget.", Toast.LENGTH_SHORT).show();
 
-        recipeName.setText(recipe);
-        gson = new Gson();
-        ingredientList = gson.fromJson(ingredients,
-                new TypeToken<List<Ingredient>>() {
-                }.getType());
-        ingredientAdapter = new IngredientAdapter(getContext(), ingredientList);
-        ingredientRecyclerView.setAdapter(ingredientAdapter);
-        ingredientAdapter.notifyDataSetChanged();
+                }
+            });
 
-        stepList = gson.fromJson(steps,
-                new TypeToken<List<Step>>() {
-                }.getType());
-        stepAdapter = new StepAdapter(getContext(), stepList);
-        stepAdapter.setOnClick(this);
-        stepRecyclerView.setAdapter(stepAdapter);
-        stepAdapter.notifyDataSetChanged();
+            recipeName.setText(recipe);
+            gson = new Gson();
+            ingredientList = gson.fromJson(ingredients,
+                    new TypeToken<List<Ingredient>>() {
+                    }.getType());
+            ingredientAdapter = new IngredientAdapter(getContext(), ingredientList);
+            ingredientRecyclerView.setAdapter(ingredientAdapter);
+            ingredientAdapter.notifyDataSetChanged();
 
+            stepList = gson.fromJson(steps,
+                    new TypeToken<List<Step>>() {
+                    }.getType());
+            stepAdapter = new StepAdapter(getContext(), stepList);
+            stepAdapter.setOnClick(this);
+            stepRecyclerView.setAdapter(stepAdapter);
+            stepAdapter.notifyDataSetChanged();
+        } else {
+            mErrorMessage.setVisibility(View.VISIBLE);
+            floatingActionButton.setVisibility(View.GONE);
+            detailScrollView.setVisibility(View.GONE);
+        }
+        mProgressBar.setVisibility(View.GONE);
         return view;
     }
 

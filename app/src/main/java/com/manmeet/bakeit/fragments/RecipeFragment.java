@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.gson.Gson;
@@ -28,6 +29,7 @@ import com.manmeet.bakeit.pojos.Step;
 import com.manmeet.bakeit.retrofit.ApiBuilder;
 import com.manmeet.bakeit.retrofit.ApiInterface;
 import com.manmeet.bakeit.utils.ConstantUtility;
+import com.manmeet.bakeit.utils.NetworkUtility;
 import com.manmeet.bakeit.utils.OnRecipeClickListener;
 import com.manmeet.bakeit.utils.SimpleIdlingResource;
 
@@ -48,6 +50,8 @@ public class RecipeFragment extends Fragment implements OnRecipeClickListener {
     private RecipeAdapter recipeAdapter;
     private ApiInterface apiInterface;
     private SimpleIdlingResource simpleIdlingResource;
+    private ProgressBar mProgressBar;
+
 
 
     public RecipeFragment() {
@@ -58,12 +62,13 @@ public class RecipeFragment extends Fragment implements OnRecipeClickListener {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_main, container, false);
+        mProgressBar = view.findViewById(R.id.recipe_progressbar);
+        mProgressBar.setVisibility(View.VISIBLE);
         apiInterface = ApiBuilder.createService(ApiInterface.class);
         simpleIdlingResource = (SimpleIdlingResource) ((MainActivity) getActivity()).getIdlingResource();
         if (simpleIdlingResource != null){
             simpleIdlingResource.setIdleState(false);
         }
-
         recipeNoNetwork = view.findViewById(R.id.recipe_no_network);
         recipeRecyclerView = view.findViewById(R.id.recipe_recycler_view);
         recipeRecyclerView.setItemAnimator(new DefaultItemAnimator());
@@ -71,7 +76,7 @@ public class RecipeFragment extends Fragment implements OnRecipeClickListener {
         recipeAdapter = new RecipeAdapter(getContext(), recipeList);
         recipeAdapter.setOnClick(this);
         recipeRecyclerView.setAdapter(recipeAdapter);
-        if ( isNetworkConnected()){
+        if (NetworkUtility.isNetworkConnected(view.getContext())){
             recipeRecyclerView.setVisibility(View.VISIBLE);
             recipeNoNetwork.setVisibility(View.GONE);
             getRecipeList();
@@ -79,16 +84,8 @@ public class RecipeFragment extends Fragment implements OnRecipeClickListener {
             recipeRecyclerView.setVisibility(View.GONE);
             recipeNoNetwork.setVisibility(View.VISIBLE);
         }
+        mProgressBar.setVisibility(View.GONE);
         return view;
-    }
-
-    private boolean isNetworkConnected() {
-        ConnectivityManager connectivityManager =
-                (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-
-        return networkInfo != null && networkInfo.isConnectedOrConnecting();
-
     }
 
     public void getRecipeList() {

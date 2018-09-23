@@ -11,6 +11,7 @@
         android:layout_height="wrap_content"
         android:textSize="20sp"
         tools:text="Steps"
+        android:textColor="@color/colorBlack"
         android:drawablePadding="5dp"
         android:drawableLeft="@drawable/ic_videocam_black_18dp"
         android:drawableStart="@drawable/ic_videocam_black_18dp" />

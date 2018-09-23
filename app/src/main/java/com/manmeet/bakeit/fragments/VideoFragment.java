@@ -16,6 +16,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.android.exoplayer2.DefaultLoadControl;
@@ -38,6 +40,7 @@ import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 import com.manmeet.bakeit.R;
 import com.manmeet.bakeit.utils.ConstantUtility;
+import com.manmeet.bakeit.utils.NetworkUtility;
 import com.squareup.picasso.Picasso;
 
 public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
@@ -56,10 +59,18 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
     private PlaybackStateCompat.Builder playbackBuilder;
     private Uri videoUri;
     private SimpleExoPlayer simpleExoPlayer;
+    private ProgressBar mProgressBar;
+    private TextView mErrorMessage;
+    private LinearLayout videoLinearLayout;
+
+    public VideoFragment() {
+        // Required empty public constructor
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         Bundle bundle = getArguments();
         if (bundle != null) {
             shortDescription = bundle.getString(ConstantUtility.INTENT_SHORT_DESCRIPTION_KEY);
@@ -70,11 +81,6 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
         }
     }
 
-    public VideoFragment() {
-        // Required empty public constructor
-    }
-
-
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -83,6 +89,11 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
         videoDescription = view.findViewById(R.id.video_description);
         videoPlaceholder = view.findViewById(R.id.video_placeholder);
         videoName = view.findViewById(R.id.video_name);
+        mErrorMessage = view.findViewById(R.id.video_no_network);
+        videoLinearLayout = view.findViewById(R.id.video_linearlayout);
+        mProgressBar = view.findViewById(R.id.video_progressbar);
+        mProgressBar.setVisibility(View.VISIBLE);
+
         if (savedInstanceState != null) {
             int placeHolderVisibility = savedInstanceState.getInt(ConstantUtility.KEY_VISIBILITY_VIDEO_PLACEHOLDER);
             videoPlaceholder.setVisibility(placeHolderVisibility);
@@ -91,37 +102,51 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
             //get play when ready boolean
             playWhenReady = savedInstanceState.getBoolean(ConstantUtility.BOOLEAN_PLAY_WHEN_READY);
         }
-        //Log.d(TAG, "URL : " + url);
-        videoName.setText(shortDescription);
-        if (videoUrl != null) {
-            if (videoUrl.equals("") && !thumbnailUrl.equals("")){
-                videoUrl = thumbnailUrl;
-            }
-            if (videoUrl.equals("")) {
-                Log.d(TAG, "EMPTY URL");
-                simpleExoPlayerView.setVisibility(View.GONE);
-                videoPlaceholder.setVisibility(View.VISIBLE);
-                if (!thumbnailUrl.equals("")) {
-                    //Load thumbnail if present
-                    Picasso.with(getActivity()).load(thumbnailUrl).into(videoPlaceholder);
+        if (NetworkUtility.isNetworkConnected(view.getContext())) {
+            mErrorMessage.setVisibility(View.GONE);
+            videoLinearLayout.setVisibility(View.VISIBLE);
+
+            //Log.d(TAG, "URL : " + url);
+            videoName.setText(shortDescription);
+            if (videoUrl != null) {
+                if (videoUrl.equals("") && !thumbnailUrl.equals("")) {
+                    videoUrl = thumbnailUrl;
                 }
-                if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-                    videoDescription.setText(description);
+                if (videoUrl.equals("")) {
+                    Log.d(TAG, "EMPTY URL");
+                    simpleExoPlayerView.setVisibility(View.GONE);
+                    videoPlaceholder.setVisibility(View.VISIBLE);
+                    if (!thumbnailUrl.equals("")) {
+                        //Load thumbnail if present
+                        Picasso.with(getActivity()).load(thumbnailUrl).into(videoPlaceholder);
+                    }
+                    if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                        videoDescription.setText(description);
+                    } else {
+                        hideUI();
+                        simpleExoPlayerView.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
+                        simpleExoPlayerView.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    }
                 } else {
-                    hideUI();
-                    simpleExoPlayerView.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
-                    simpleExoPlayerView.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    if (savedInstanceState != null) {
+                        //resuming by seeking to the last position
+                        positionPlayer = savedInstanceState.getLong(ConstantUtility.MEDIA_POSITION);
+                    }
+                    videoPlaceholder.setVisibility(View.GONE);
+                    initializeMedia();
+                    Log.d(TAG, "URL " + videoUrl);
+                    initializePlayer(Uri.parse(videoUrl));
+                    videoUri = Uri.parse(videoUrl);
+                    if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                        videoDescription.setText(description);
+                    } else {
+                        hideUI();
+                        simpleExoPlayerView.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
+                        simpleExoPlayerView.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
+                    }
                 }
             } else {
-                if (savedInstanceState != null) {
-                    //resuming by seeking to the last position
-                    positionPlayer = savedInstanceState.getLong(ConstantUtility.MEDIA_POSITION);
-                }
-                videoPlaceholder.setVisibility(View.GONE);
-                initializeMedia();
-                Log.d(TAG, "URL " + videoUrl);
-                initializePlayer(Uri.parse(videoUrl));
-                videoUri = Uri.parse(videoUrl);
+                simpleExoPlayerView.setVisibility(View.GONE);
                 if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
                     videoDescription.setText(description);
                 } else {
@@ -131,15 +156,10 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
                 }
             }
         } else {
-            simpleExoPlayerView.setVisibility(View.GONE);
-            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-                videoDescription.setText(description);
-            } else {
-                hideUI();
-                simpleExoPlayerView.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
-                simpleExoPlayerView.getLayoutParams().width = ViewGroup.LayoutParams.MATCH_PARENT;
-            }
+            mErrorMessage.setVisibility(View.VISIBLE);
+            videoLinearLayout.setVisibility(View.GONE);
         }
+        mProgressBar.setVisibility(View.GONE);
         return view;
     }
 
@@ -189,7 +209,6 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
         }
     }
 
-
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
@@ -208,17 +227,6 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
             simpleExoPlayer = null;
         }
     }
-
-
-    private boolean isNetworkConnected() {
-        ConnectivityManager connectivityManager =
-                (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-
-        return networkInfo != null && networkInfo.isConnectedOrConnecting();
-
-    }
-
 
     @Override
     public void onDestroy() {
@@ -259,28 +267,6 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
         }
     }
 
-    private class SessionCallBacks extends MediaSessionCompat.Callback {
-
-        @Override
-        public void onPlay() {
-            super.onPlay();
-            simpleExoPlayer.setPlayWhenReady(true);
-        }
-
-        @Override
-        public void onPause() {
-            super.onPause();
-            simpleExoPlayer.setPlayWhenReady(false);
-        }
-
-        @Override
-        public void onSkipToPrevious() {
-            super.onSkipToPrevious();
-            simpleExoPlayer.seekTo(0);
-        }
-    }
-
-
     @Override
     public void onTimelineChanged(Timeline timeline, Object manifest) {
 
@@ -295,7 +281,7 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
     public void onLoadingChanged(boolean isLoading) {
 
     }
-    
+
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         if (playbackState == ExoPlayer.STATE_READY && playWhenReady) {
@@ -336,5 +322,26 @@ public class VideoFragment extends Fragment implements ExoPlayer.EventListener {
     @Override
     public void onSeekProcessed() {
 
+    }
+
+    private class SessionCallBacks extends MediaSessionCompat.Callback {
+
+        @Override
+        public void onPlay() {
+            super.onPlay();
+            simpleExoPlayer.setPlayWhenReady(true);
+        }
+
+        @Override
+        public void onPause() {
+            super.onPause();
+            simpleExoPlayer.setPlayWhenReady(false);
+        }
+
+        @Override
+        public void onSkipToPrevious() {
+            super.onSkipToPrevious();
+            simpleExoPlayer.seekTo(0);
+        }
     }
 }
